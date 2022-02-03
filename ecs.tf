@@ -27,12 +27,12 @@ resource "aws_ecs_task_definition" "airflow" {
 
   volume {
     name = "${local.airflow_volume_name}"
-    # efs_volume_configuration {
-    #     file_system_id = module.efs.id
-    #   # HACK: fix for bug in aws_ecs_task_definition provider
-    #     transit_encryption = "ENABLED"
-    #     transit_encryption_port = 7777
-    # }
+    efs_volume_configuration {
+        file_system_id = aws_efs_file_system.airflow-efs.id
+      # HACK: fix for bug in aws_ecs_task_definition provider
+        transit_encryption = "ENABLED"
+        transit_encryption_port = 7777
+    }
   }
 
   # HACK: fix for bug in aws_ecs_task_definition provider
@@ -211,13 +211,16 @@ resource "aws_ecs_service" "airflow" {
   cluster         = aws_ecs_cluster.airflow.id
   task_definition = aws_ecs_task_definition.airflow.id
   desired_count   = 1
+  enable_execute_command = true
 
   health_check_grace_period_seconds = 120
+  
 
   network_configuration {
     subnets          = local.rds_ecs_subnet_ids
     security_groups  = [aws_security_group.airflow.id]
-    assign_public_ip = length(var.private_subnet_ids) == 0 ? true : false
+    # assign_public_ip = length(var.private_subnet_ids) == 0 ? true : false
+    assign_public_ip = true
   }
 
   capacity_provider_strategy {
@@ -230,6 +233,15 @@ resource "aws_ecs_service" "airflow" {
     container_port   = 8080
     target_group_arn = aws_lb_target_group.airflow.arn
   }
+}
+
+resource "aws_ecs_capacity_provider" "prov1" {
+  name = "prov1"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn = module.asg.autoscaling_group_arn
+  }
+
 }
 
 resource "aws_lb_target_group" "airflow" {
@@ -252,4 +264,94 @@ resource "aws_lb_target_group" "airflow" {
   }
 
   tags = local.common_tags
+}
+
+data "aws_ami" "amazon_linux_ecs" {
+  most_recent = true
+
+  owners = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn-ami-*-amazon-ecs-optimized"]
+  }
+
+  filter {
+    name   = "owner-alias"
+    values = ["amazon"]
+  }
+}
+
+data "aws_partition" "current" {}
+
+resource "aws_iam_role" "this" {
+  name = "airflow_ecs_instance_role"
+  path = "/ecs/"
+
+  tags = local.common_tags
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2008-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": ["ec2.amazonaws.com"]
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_instance_profile" "this" {
+  name = "airflow_ecs_instance_profile"
+  role = aws_iam_role.this.name
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_ec2_role" {
+  role       = aws_iam_role.this.id
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
+resource "aws_iam_role_policy_attachment" "amazon_ssm_managed_instance_core" {
+  count = 1
+
+  role       = aws_iam_role.this.id
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_ec2_cloudwatch_role" {
+  role       = aws_iam_role.this.id
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/CloudWatchLogsFullAccess"
+}
+
+module "asg" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "~> 4.0"
+
+  name = "airflow-ec2-instance"
+
+  # Launch configuration
+  lc_name   = "airflow-ec2-instance"
+  use_lc    = true
+  create_lc = true
+
+  image_id                  = data.aws_ami.amazon_linux_ecs.id
+  instance_type             = "t2.micro"
+  security_groups           = [aws_security_group.airflow.id]
+  iam_instance_profile_name = aws_iam_instance_profile.this.name
+  user_data = templatefile("${path.module}/templates/startup/user_data.sh", {})
+
+  # Auto scaling group
+  vpc_zone_identifier       = var.private_subnet_ids
+  health_check_type         = "EC2"
+  min_size                  = 0
+  max_size                  = 2
+  desired_capacity          = 0 # we don't need them for the example
+  wait_for_capacity_timeout = 0
 }

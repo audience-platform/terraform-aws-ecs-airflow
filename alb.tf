@@ -41,10 +41,26 @@ resource "aws_security_group" "airflow" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    description = "Allow NFS traffic out"
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   ingress {
     description = "Allow postgres in"
     from_port   = 5432
     to_port     = 5432
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+   ingress {
+    description = "Allow ssh in"
+    from_port   = 22
+    to_port     = 22
     protocol    = "TCP"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -66,14 +82,14 @@ resource "aws_security_group" "airflow" {
 
 }
 
-resource "aws_security_group_rule" "airflow_connection" {
-  security_group_id        = aws_security_group.airflow.id
-  type                     = "ingress"
-  protocol                 = "-1"
-  from_port                = 0
-  to_port                  = 0
-  source_security_group_id = aws_security_group.airflow.id
-}
+# resource "aws_security_group_rule" "airflow_connection" {
+#   security_group_id        = aws_security_group.airflow.id
+#   type                     = "ingress"
+#   protocol                 = "-1"
+#   from_port                = 0
+#   to_port                  = 0
+#   source_security_group_id = aws_security_group.airflow.id
+# }
 
 // ALB
 resource "aws_lb" "airflow" {

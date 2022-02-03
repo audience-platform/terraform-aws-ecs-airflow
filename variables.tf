@@ -341,3 +341,8 @@ variable "airflow_webserver_dag_orientation" {
   description = "Default DAG orientation. Valid values are: LR (Left->Right), TB (Top->Bottom), RL (Right->Left), BT (Bottom->Top)."
   default     = "TB"
 }
+
+variable "enable_execute_command" {
+  type = bool
+  default = false
+}
