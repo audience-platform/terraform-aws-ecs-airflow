@@ -52,8 +52,8 @@ locals {
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS: "https://${var.resource_prefix}-api.${var.resource_suffix}.adsuite.tv",
     AIRFLOW__SECRETS__BACKEND: "airflow.contrib.secrets.aws_systems_manager.SystemsManagerParameterStoreBackend",
     AIRFLOW__SECRETS__BACKEND_KWARGS: "{'connections_prefix': '/airflow/connections', 'variables_prefix': '/airflow/variables', 'profile_name': 'default'}",
-    AIRFLOW__CELERY__BROKER_URL: "redis://:@am-dev-redis.d9j7cd.0001.euw1.cache.amazonaws.com:6379/0",
-    AIRFLOW__CELERY__BROKER_URL_SECRET: "${local.db_uri}"
+    AIRFLOW__CELERY__BROKER_URL: "redis://:@airflow@airflowhost.example.com:6380/0",
+    AIRFLOW__CELERY__BROKER_URL_SECRET: "$ШЩ"
   })
 
   airflow_sync_dag_id = "0_sync_dags_in_s3_to_local_airflow_dags_folder"

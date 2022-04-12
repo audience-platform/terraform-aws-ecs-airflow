@@ -37,7 +37,7 @@ locals {
   // Keep the 2 env vars second, we want to override them (this module manges these vars)
   airflow_variables = merge(var.airflow_variables, {
     AIRFLOW__CORE__SQL_ALCHEMY_CONN : local.db_uri,
-    AIRFLOW__CORE__EXECUTOR : "CeleryExecutor",
+    AIRFLOW__CORE__EXECUTOR : "Executor",
     AIRFLOW__WEBSERVER__RBAC : var.airflow_authentication == "" ? false : true,
     AIRFLOW__WEBSERVER__AUTH_BACKEND : lookup(local.auth_map, var.airflow_authentication, ""),
     AIRFLOW__WEBSERVER__BASE_URL : "${aws_lb.airflow.dns_name}", # localhost is default value
@@ -51,9 +51,7 @@ locals {
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_METHODS: "POST, GET, OPTIONS, DELETE",
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS: "https://${var.resource_prefix}-api.${var.resource_suffix}.adsuite.tv",
     AIRFLOW__SECRETS__BACKEND: "airflow.contrib.secrets.aws_systems_manager.SystemsManagerParameterStoreBackend",
-    AIRFLOW__SECRETS__BACKEND_KWARGS: "{'connections_prefix': '/airflow/connections', 'variables_prefix': '/airflow/variables', 'profile_name': 'default'}",
-    AIRFLOW__CELERY__BROKER_URL: "redis://:@am-dev-redis.d9j7cd.0001.euw1.cache.amazonaws.com:6379/0",
-    AIRFLOW__CELERY__BROKER_URL_SECRET: "${local.db_uri}"
+    AIRFLOW__SECRETS__BACKEND_KWARGS: "{'connections_prefix': '/airflow/connections', 'variables_prefix': '/airflow/variables', 'profile_name': 'default'}"
   })
 
   airflow_sync_dag_id = "0_sync_dags_in_s3_to_local_airflow_dags_folder"
