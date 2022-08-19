@@ -8,3 +8,9 @@ terraform {
 }
 
 data "aws_caller_identity" "current" {}
+
+resource "random_password" "master_password" {
+  length  = 16
+  special = false
+}
+

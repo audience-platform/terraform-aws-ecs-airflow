@@ -26,6 +26,14 @@ output "airflow_api_key" {
   value = local.airflow_api_key
 }
 
+output "airflow_master_password" {
+  value = local.airflow_ui_password
+}
+
+output "airflow_master_username" {
+  value = var.username_api
+}
+
 output "airflow_s3_bucket_arn" {
   value = aws_s3_bucket.airflow[0].arn
 }
