@@ -57,7 +57,7 @@ resource "aws_s3_bucket_policy" "airflow_bucket_policies" {
         "s3:GetObject"
       ],
       "Effect": "Allow",
-      "Resource": "${aws_s3_bucket.airflow[0].id}/*",
+      "Resource": "arn:aws:s3:::${aws_s3_bucket.airflow[0].id}/*",
       "Principal": "*"
     }
   ]
