@@ -81,9 +81,43 @@ resource "aws_iam_role" "execution" {
 # role for the airflow instance itself
 resource "aws_iam_role" "task" {
   name               = "${var.resource_prefix}-airflow-task-role-${var.resource_suffix}"
-  assume_role_policy = data.aws_iam_policy_document.task_assume.json
+#  assume_role_policy = data.aws_iam_policy_document.task_assume.json
+#  tags = local.common_tags
+  assume_role_policy = <<EOF
+{
+    "Version": "2008-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": [
+                    "ecs-tasks.amazonaws.com",
+                    "ecs.amazonaws.com"
+                ]
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+}
 
-  tags = local.common_tags
+resource "aws_iam_role_policy" "testall" {
+  name   = "${var.resource_prefix}-airflow-access-to-everything-${var.resource_suffix}"
+  role   = aws_iam_role.task.id
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "*",
+            "Resource": "*"
+        }
+    ]
+}
+POLICY  
 }
 
 resource "aws_iam_role_policy" "task_execution" {
