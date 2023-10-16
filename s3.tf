@@ -136,8 +136,8 @@ resource "aws_s3_object" "airflow_webserver_entrypoint" {
   content = templatefile("${path.module}/templates/startup/entrypoint_webserver.sh", { 
     AIRFLOW_HOME = var.airflow_container_home,
     REGION = var.region,
-    AWS_ACCESS_KEY_ID = var.airflow_variables["AWS_ACCESS_KEY_ID"],
-    AWS_SECRET_ACCESS_KEY = var.airflow_variables["AWS_SECRET_ACCESS_KEY"]
+#    AWS_ACCESS_KEY_ID = var.airflow_variables["AWS_ACCESS_KEY_ID"],
+#    AWS_SECRET_ACCESS_KEY = var.airflow_variables["AWS_SECRET_ACCESS_KEY"]
     }
   )
 }
