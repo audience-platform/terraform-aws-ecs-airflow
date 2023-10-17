@@ -55,7 +55,7 @@ resource "aws_s3_bucket_policy" "airflow_bucket_policies" {
             "Sid": "Stmt87686786",
             "Effect": "Allow",
             "Principal": {
-                "AWS": "arn:aws:iam::681718253798:root"
+                "AWS": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
             },
             "Action": "s3:GetObject",
             "Resource": "arn:aws:s3:::${aws_s3_bucket.airflow[0].id}/*"
