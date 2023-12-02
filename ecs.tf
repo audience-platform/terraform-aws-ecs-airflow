@@ -221,7 +221,7 @@ resource "aws_ecs_service" "airflow" {
   desired_count   = 1
   enable_execute_command = true
 
-  health_check_grace_period_seconds = 120
+  health_check_grace_period_seconds = 300
 
   network_configuration {
     subnets          = local.rds_ecs_subnet_ids
