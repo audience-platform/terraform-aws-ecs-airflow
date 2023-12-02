@@ -49,18 +49,41 @@ resource "aws_s3_bucket_policy" "airflow_bucket_policies" {
   bucket = aws_s3_bucket.airflow[0].id
   policy = <<POLICY
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "Stmt87686786",
-      "Action": [
-        "s3:GetObject"
-      ],
-      "Effect": "Allow",
-      "Resource": "arn:aws:s3:::${aws_s3_bucket.airflow[0].id}/*",
-      "Principal": "*"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Stmt87686786",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::${aws_s3_bucket.airflow[0].id}/*"
+        },
+        {
+            "Sid": "SSMBucketPermissionsCheck",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ssm.amazonaws.com"
+            },
+            "Action": "s3:GetBucketAcl",
+            "Resource": "arn:aws:s3:::${aws_s3_bucket.airflow[0].id}"
+        },
+        {
+            "Sid": " SSMBucketDelivery",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ssm.amazonaws.com"
+            },
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::${aws_s3_bucket.airflow[0].id}/*",
+            "Condition": {
+                "StringEquals": {
+                    "s3:x-amz-acl": "bucket-owner-full-control"
+                }
+            }
+        }
+    ]
 }
 POLICY
 }
@@ -135,9 +158,9 @@ resource "aws_s3_object" "airflow_webserver_entrypoint" {
   key     = "startup/entrypoint_webserver.sh"
   content = templatefile("${path.module}/templates/startup/entrypoint_webserver.sh", { 
     AIRFLOW_HOME = var.airflow_container_home,
-    REGION = var.region,
-    AWS_ACCESS_KEY_ID = var.airflow_variables["AWS_ACCESS_KEY_ID"],
-    AWS_SECRET_ACCESS_KEY = var.airflow_variables["AWS_SECRET_ACCESS_KEY"]
+    REGION = var.region
+#    AWS_ACCESS_KEY_ID = var.airflow_variables["AWS_ACCESS_KEY_ID"],
+#    AWS_SECRET_ACCESS_KEY = var.airflow_variables["AWS_SECRET_ACCESS_KEY"]
     }
   )
 }
@@ -154,8 +177,8 @@ resource "aws_s3_object" "airflow_init_entrypoint" {
     RBAC_PASSWORD   = var.rbac_admin_password,
     AIRFLOW_VERSION = var.airflow_image_tag,
     REGION = var.region,
-    AWS_ACCESS_KEY_ID = var.airflow_variables["AWS_ACCESS_KEY_ID"],
-    AWS_SECRET_ACCESS_KEY = var.airflow_variables["AWS_SECRET_ACCESS_KEY"],
+#    AWS_ACCESS_KEY_ID = var.airflow_variables["AWS_ACCESS_KEY_ID"],
+#    AWS_SECRET_ACCESS_KEY = var.airflow_variables["AWS_SECRET_ACCESS_KEY"],
     AIRFLOW_HOME = var.airflow_container_home
     AIRFLOW_USER_PASSWORD = var.password_api
     AIRFLOW_USER_NAME = var.username_api
